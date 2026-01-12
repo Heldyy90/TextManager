@@ -17,11 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Конфиг TextManager:
- * - хранит тексты и оригинальные названия
- * - хранит порядок (чтобы перемещения сохранялись между перезапусками)
- */
 public class TextManagerConfig {
 
     private static final Gson G = new GsonBuilder().setPrettyPrinting().create();
@@ -52,24 +47,18 @@ public class TextManagerConfig {
         saveTexts();
     }
 
-    /**
-     * Сохранить конфиг (включая порядок ключей).
-     */
     public static void saveTexts() {
         try {
             Files.createDirectories(FILE.getParent());
             try (Writer w = Files.newBufferedWriter(FILE)) {
                 Map<String, Object> root = new LinkedHashMap<>();
 
-                // Порядок (важно для перемещений)
                 List<String> order = new ArrayList<>(TextManager.getAllTexts().keySet());
                 root.put("order", order);
 
-                // Данные
                 root.put("textOriginalNames", TextManager.getAllOriginalNames());
                 root.put("texts", TextManager.getAllTexts());
 
-                // Опции
                 root.put("closeChatAfterSend", CLOSE_CHAT_AFTER_SEND);
 
                 G.toJson(root, w);
@@ -77,10 +66,6 @@ public class TextManagerConfig {
         } catch (Exception ignored) {}
     }
 
-    /**
-     * Загрузить конфиг (с сохранением порядка).
-     * Поддерживает старый формат без поля "order".
-     */
     public static void load() {
         try {
             if (!Files.exists(FILE)) return;
@@ -105,11 +90,9 @@ public class TextManagerConfig {
                     } catch (Exception ignored) {}
                 }
 
-                // Собираем карты в корректном порядке
                 LinkedHashMap<String, String> loadedTexts = new LinkedHashMap<>();
                 LinkedHashMap<String, String> loadedOriginals = new LinkedHashMap<>();
 
-                // 1) Если есть order — идем по нему
                 if (root.has("order") && root.get("order").isJsonArray()) {
                     JsonArray orderArr = root.getAsJsonArray("order");
                     for (JsonElement e : orderArr) {
@@ -126,7 +109,6 @@ public class TextManagerConfig {
                     }
                 }
 
-                // 2) Добавляем все, что есть в texts, но еще не было добавлено (на случай если order отсутствует или устарел)
                 for (Map.Entry<String, JsonElement> entry : textsObj.entrySet()) {
                     String key = entry.getKey();
                     if (loadedTexts.containsKey(key)) continue;
@@ -145,7 +127,6 @@ public class TextManagerConfig {
                 ORIGINAL_NAMES.clear();
                 ORIGINAL_NAMES.putAll(loadedOriginals);
 
-                // Передать TextManager загруженные данные
                 try {
                     TextManager.loadTexts(TEXTS, ORIGINAL_NAMES);
                 } catch (Throwable ignored) {}
@@ -153,9 +134,6 @@ public class TextManagerConfig {
         } catch (Exception ignored) {}
     }
 
-    /**
-     * Перезагрузить конфиг из файла (для синхронизации при изменении файла внешними инструментами)
-     */
     public static void reloadConfig() {
         load();
     }
